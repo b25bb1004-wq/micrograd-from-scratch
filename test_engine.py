@@ -1,8 +1,8 @@
-# tests for engine.py (Value) and nn.py (Neuron/Layer/MLP)
-# run with: pytest
+# Tests for engine.py (Value) and nn.py (Neuron/Layer/MLP).
+# Run with: pytest
 #
-# a few of these are regression tests for actual bugs hit while debugging
-# training - the comment on each one says which
+# A few of these are regression tests for actual bugs hit while debugging
+# training - the comment on each one says which.
 
 import math
 import random
@@ -27,7 +27,7 @@ def grad(v, wrt):
     return wrt.grad
 
 
-# basic operators, both operand orders -----------------------------------
+# Basic operators, both operand orders -----------------------------------
 
 def test_add_and_radd():
     x = Value(2.0)
@@ -71,7 +71,7 @@ def test_division_by_zero_value_raises():
         Value(1.0) / Value(0.0)
 
 
-# tanh / exp / relu --------------------------------------------------------
+# tanh / exp / relu ---------------------------------------------------------
 
 def test_tanh_matches_math_tanh():
     x = Value(0.7)
@@ -102,7 +102,7 @@ def test_relu():
     assert grad(x.relu(), x) == 1  # passes straight through on the positive side
 
 
-# graph shape edge cases ---------------------------------------------------
+# Graph shape edge cases -----------------------------------------------
 
 def test_value_used_twice_accumulates_gradient():
     # if _backward overwrote grad instead of +=, one of the two paths here
@@ -161,7 +161,7 @@ def test_mlp_output_is_a_single_value_for_one_output_neuron():
     assert isinstance(out, Value)
 
 
-# gradient check against a plain numerical derivative -----------------------
+# Gradient check against a plain numerical derivative -----------------------
 
 def numerical_grad(mlp, xs, ys, param, eps=1e-6):
     def loss():
@@ -192,7 +192,7 @@ def test_mlp_analytic_gradient_matches_numerical_gradient():
         assert p.grad == pytest.approx(numerical_grad(mlp, xs, ys, p), abs=1e-4)
 
 
-# does it actually train --------------------------------------------------
+# Does it actually train ----------------------------------------------------
 
 def test_training_loop_decreases_loss():
     random.seed(0)
