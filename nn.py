@@ -1,6 +1,3 @@
-"""Neuron, Layer and MLP: a small multi-layer perceptron built out of Value,
-each neuron computing tanh(w . x + b)."""
-
 import random
 
 from engine import Value

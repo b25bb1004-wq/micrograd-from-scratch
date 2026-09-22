@@ -1,7 +1,3 @@
-"""Scalar autograd engine: a Value wraps a number and records how it was
-computed, so backward() can walk that graph in reverse and fill in .grad
-for every node via the chain rule."""
-
 import math
 
 

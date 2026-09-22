@@ -1,77 +1,38 @@
 # micrograd from scratch
 
-A scalar autograd engine and a small multi-layer perceptron, built from
-scratch in Python, following Andrej Karpathy's ["The spelled-out intro to
-neural networks and backpropagation: building
-micrograd"](https://www.youtube.com/watch?v=VMj-3S1tku0) lecture.
+following along with karpathy's "building micrograd" video, implementing a tiny autograd engine and a small MLP by hand.
 
-`Value` wraps a number and records how it was computed, so that calling
-`.backward()` on the final output walks the graph in reverse and fills in
-`.grad` for every node via the chain rule — the same idea PyTorch's autograd
-is built on, at a scale you can read top to bottom in one sitting.
+`Value` wraps a number and remembers how it was computed, so `.backward()` can walk back through the graph and work out the gradient of everything with respect to the final output. basically how pytorch's autograd works, just at a scale you can actually read top to bottom.
 
-## Layout
+## what's here
 
-| File | Contents |
-|---|---|
-| [`engine.py`](engine.py) | `Value`: the scalar autograd engine (`+`, `-`, `*`, `/`, `**`, `tanh`, `exp`, `relu`, `backward`) |
-| [`nn.py`](nn.py) | `Neuron`, `Layer`, `MLP`, built on top of `Value` |
-| [`micrograd_from_scratch.ipynb`](micrograd_from_scratch.ipynb) | The walkthrough: derivatives, `Value`, a hand-built neuron, the graph visualizer, and training a small MLP on a toy dataset |
-| [`test_engine.py`](test_engine.py) | Correctness and edge-case tests for `engine.py` / `nn.py` |
+- `engine.py` - the `Value` class (+, -, *, /, **, tanh, exp, relu, backward)
+- `nn.py` - `Neuron`, `Layer`, `MLP`, built on top of `Value`
+- `micrograd_from_scratch.ipynb` - the actual walkthrough: derivatives -> Value -> a neuron by hand -> the graph viz -> training a tiny MLP
+- `test_engine.py` - tests for the above
 
-## Setup
+## running it
 
-```bash
+```
 pip install -r requirements.txt
 ```
 
-`graphviz` (the Python package) also needs the `dot` binary installed
-separately to actually render diagrams (`brew install graphviz` on macOS).
-Everything else in the notebook works without it.
+graphviz also needs the `dot` binary installed on your system to actually draw the diagrams (`brew install graphviz` on mac). everything else works without it.
 
-## Running the notebook
+## things that tripped me up
 
-Open `micrograd_from_scratch.ipynb` in Jupyter and run the cells top to
-bottom. A few things worth knowing before stepping through it manually
-instead of using the training-loop cell:
+- only create the MLP once (`n = MLP(3, [4, 4, 1])`). re-running that cell resets every weight back to random, which looks exactly like the loss "not learning" if you're stepping through cells by hand instead of using the loop
+- backward() only knows about whatever graph you last built, so you need a fresh forward pass before every backward() call, not just re-run the loss/update cells
+- zero the grads before every backward() call, they accumulate (+=) instead of overwriting. forgot this once and it made training look way better than it actually was
+- lr=0.05 bounces around for the first several dozen steps before it actually settles down, that's normal, not a bug
 
-- **Create the network once.** `n = MLP(3, [4, 4, 1])` should only run at
-  the start. Re-running it throws away whatever the network has learned
-  and starts over from new random weights — this is the single most
-  common reason the loss looks like it's "not decreasing."
-- **Each step needs a fresh forward pass.** `backward()` differentiates
-  through *whatever graph was last built*. Update the parameters, then
-  recompute `ypred` before computing the next loss — otherwise you're
-  calling `backward()` on a stale graph.
-- **Zero the gradients before every `backward()` call.** Every `_backward`
-  uses `+=`, so gradients accumulate across calls by design (it's what
-  lets a value used twice in an expression get contributions from both
-  paths). Forgetting to zero them between training steps makes each step
-  use the sum of every gradient computed so far, not just the current
-  one.
-- **Learning rate matters more than it looks.** At `lr = 0.05` the loss
-  can bounce for the first several dozen steps before settling — that's
-  normal overshoot, not a bug. `lr = 0.01` is slower but smoother.
+## tests
 
-## Tests
-
-```bash
+```
 pytest
 ```
 
-Covers the basic operators in both operand orders (`x - 1` and `1 - x`),
-gradient correctness (including a numerical finite-difference check
-against the analytic gradients produced by `backward()`), graph edge
-cases (a value used twice, diamond-shaped graphs), `relu`, and two edge
-cases found while debugging this project: `tanh` no longer overflowing
-on large inputs, and what happens if you forget to zero gradients
-between training steps.
+## known limitations
 
-## Known limitations
-
-- `exp()` raises `OverflowError` for inputs above roughly 710, since
-  `e^x` no longer fits in a float at that point. `tanh()` doesn't have
-  this problem even for very large inputs, since it's implemented with
-  `math.tanh` directly rather than via `exp`.
-- `Value.__pow__` only supports `int`/`float` exponents (i.e. `x**2` and
-  `x**-1`, but not `x**y` for another `Value` `y`).
+- `exp()` overflows for inputs much above ~700, since e^x just doesn't fit in a float at that point. tanh doesn't have this problem since it's implemented with math.tanh directly instead of going through exp
+- `**` only works with int/float exponents, so `x**2` is fine but `x**y` where y is also a Value isn't
